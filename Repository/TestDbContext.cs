@@ -1,9 +1,6 @@
 ﻿using Bogus;
 using Microsoft.EntityFrameworkCore;
 using ProvaPub.Models;
-using System.Collections.Generic;
-using System.Reflection.Emit;
-
 namespace ProvaPub.Repository
 {
 
@@ -53,7 +50,6 @@ namespace ProvaPub.Repository
 		public DbSet<Customer> Customers{ get; set; }
 		public DbSet<Product> Products{ get; set; }
 		public DbSet<Order> Orders { get; set; }
-
         public DbSet<RandomNumber> Numbers { get; set; }
 
     }
