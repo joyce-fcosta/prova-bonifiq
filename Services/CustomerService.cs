@@ -6,29 +6,31 @@ using ProvaPub.Repository;
 
 namespace ProvaPub.Services
 {
-        public class CustomerService: ICustomerService
+    public class CustomerService : ICustomerService
+    {
+        private readonly TestDbContext _ctx;
+
+        private readonly IDateTimeProvider _dateTimeProvider;
+
+        public CustomerService(TestDbContext ctx, IDateTimeProvider dateTimeProvider)
         {
-            TestDbContext _ctx;
+            _ctx = ctx;
+            _dateTimeProvider = dateTimeProvider;
+        }
 
-            public CustomerService(TestDbContext ctx)
-            {
-                _ctx = ctx;
-            }
+    public async Task<PagedList<Customer>> ListCustomersAsync(int page) => await _ctx.Customers.ToPagedListAsync(page);
 
-        public async Task<PagedList<Customer>> ListCustomersAsync(int page) => await _ctx.Customers.ToPagedListAsync(page);
-
-        public async Task<bool> CanPurchase(int customerId, decimal purchaseValue)
+        public async Task<bool> CanPurchaseAsync(int customerId, decimal purchaseValue)
         {
-            if (customerId <= 0) throw new ArgumentOutOfRangeException(nameof(customerId));
-
-            if (purchaseValue <= 0) throw new ArgumentOutOfRangeException(nameof(purchaseValue));
+            if (customerId <= 0) throw new ArgumentOutOfRangeException(nameof(customerId), "Customer ID must be greater than zero.");
+            if (purchaseValue <= 0) throw new ArgumentOutOfRangeException(nameof(purchaseValue), "Purchase value must be greater than zero.");
 
             //Business Rule: Non registered Customers cannot purchase
             var customer = await _ctx.Customers.FindAsync(customerId);
             if (customer == null) throw new InvalidOperationException($"Customer Id {customerId} does not exists");
 
             //Business Rule: A customer can purchase only a single time per month
-            var baseDate = DateTime.UtcNow.AddMonths(-1);
+            var baseDate = _dateTimeProvider.UtcNow.AddMonths(-1);  
             var ordersInThisMonth = await _ctx.Orders.CountAsync(s => s.CustomerId == customerId && s.OrderDate >= baseDate);
             if (ordersInThisMonth > 0)
                 return false;
@@ -39,7 +41,8 @@ namespace ProvaPub.Services
                 return false;
 
             //Business Rule: A customer can purchases only during business hours and working days
-            if (DateTime.UtcNow.Hour < 8 || DateTime.UtcNow.Hour > 18 || DateTime.UtcNow.DayOfWeek == DayOfWeek.Saturday || DateTime.UtcNow.DayOfWeek == DayOfWeek.Sunday)
+            var currentUtc = _dateTimeProvider.UtcNow;
+            if (currentUtc.Hour < 8 || currentUtc.Hour > 18 || currentUtc.DayOfWeek == DayOfWeek.Saturday || currentUtc.DayOfWeek == DayOfWeek.Sunday)
                 return false;
 
 
