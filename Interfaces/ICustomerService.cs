@@ -5,6 +5,6 @@ namespace ProvaPub.Interfaces
     public interface ICustomerService
     {
         Task<PagedList<Customer>> ListCustomersAsync(int page);
-        Task<bool> CanPurchase(int customerId, decimal purchaseValue);
+        Task<bool> CanPurchaseAsync(int customerId, decimal purchaseValue);
     }
 }
