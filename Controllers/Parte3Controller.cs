@@ -1,12 +1,10 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+using ProvaPub.Enums;
+using ProvaPub.Interfaces;
 using ProvaPub.Models;
-using ProvaPub.Repository;
-using ProvaPub.Services;
 
 namespace ProvaPub.Controllers
 {
-
     /// <summary>
     /// Esse teste simula um pagamento de uma compra.
     /// O método PayOrder aceita diversas formas de pagamento. Dentro desse método é feita uma estrutura de diversos "if" para cada um deles.
@@ -20,16 +18,30 @@ namespace ProvaPub.Controllers
 	[Route("[controller]")]
 	public class Parte3Controller :  ControllerBase
 	{
-		[HttpGet("orders")]
-		public async Task<Order> PlaceOrder(string paymentMethod, decimal paymentValue, int customerId)
-		{
-            var contextOptions = new DbContextOptionsBuilder<TestDbContext>()
-    .UseSqlServer(@"Server=(localdb)\mssqllocaldb;Database=Teste;Trusted_Connection=True;")
-    .Options;
+        private readonly IOrderService _orderService;
 
-            using var context = new TestDbContext(contextOptions);
+        public Parte3Controller(IOrderService orderService)
+        {
+            _orderService = orderService;
+        }
 
-            return await new OrderService(context).PayOrder(paymentMethod, paymentValue, customerId);
-		}
-	}
+        [HttpPost("place-order")]
+        public async Task<IActionResult> PlaceOrder(PaymentMethod paymentMethod, decimal paymentValue, int customerId)
+        {
+            var order = await _orderService.PayOrderAsync(paymentMethod, paymentValue, customerId);
+
+            var timeZone = TimeZoneInfo.FindSystemTimeZoneById("E. South America Standard Time");
+            var localDate = TimeZoneInfo.ConvertTimeFromUtc(order.OrderDate, timeZone);
+
+            var response = new
+            {
+                order.Id,
+                order.Value,
+                OrderDate = localDate
+            };
+
+            return Ok(response);
+        }
+
+    }
 }
